@@ -1,0 +1,392 @@
+--- spm_coreg_ui.m	2004-06-29 11:56:32.000000000 +0200
++++ spm_coreg_ui.m	2009-04-03 00:00:00.000000000 +0200
+@@ -321,7 +321,7 @@
+ 
+ tmp2 = [0 1 2 3 4 5 6 7 Inf];
+ tmp = find(defs.write.interp == tmp2);
+-if ~finite(defs.write.interp), tmp = 9; end;
++if ~isfinite(defs.write.interp), tmp = 9; end;
+ if isempty(tmp), tmp = 2; end;
+ defs.write.interp = spm_input('Reslice interpolation method?','+1','m',...
+ 	['Nearest Neighbour|Trilinear|2nd Degree B-Spline|'...
+--- spm_create_vol.m	2004-06-29 11:56:33.000000000 +0200
++++ spm_create_vol.m	2009-04-03 00:00:00.000000000 +0200
+@@ -68,9 +68,9 @@
+ 		end;
+ 	end;
+ 
+-	if finite(hdr.dime.funused1) & hdr.dime.funused1,
++	if isfinite(hdr.dime.funused1) & hdr.dime.funused1,
+ 		scal  = hdr.dime.funused1;
+-		if finite(hdr.dime.funused2),
++		if isfinite(hdr.dime.funused2),
+ 			dcoff = hdr.dime.funused2;
+ 		else,
+ 			dcoff = 0;
+--- spm_list.m	2002-10-31 20:13:32.000000000 +0100
++++ spm_list.m	2009-04-03 00:00:00.000000000 +0200
+@@ -417,7 +417,7 @@
+ %-Local maxima p-values & statistics
+ %-----------------------------------------------------------------------
+ HlistXYZ = [];
+-while prod(size(find(finite(Z))))
++while prod(size(find(isfinite(Z))))
+ 
+ 	% Paginate if necessary
+ 	%---------------------------------------------------------------
+--- spm_mask.m	2003-02-03 12:29:33.000000000 +0100
++++ spm_mask.m	2009-04-03 00:00:00.000000000 +0200
+@@ -73,12 +73,12 @@
+ 		img = spm_slice_vol(V1(i),M1,dim(1:2),[0 NaN]);
+ 		if nargin<3
+ 			if ~spm_type(V1(i).dim(4),'nanrep'),
+-				msk = msk + (img~=0 & finite(img));
++				msk = msk + (img~=0 & isfinite(img));
+ 			else,
+-				msk = msk + finite(img);
++				msk = msk + isfinite(img);
+ 			end;
+ 		else,
+-			msk = msk + (img>=thresh & finite(img));
++			msk = msk + (img>=thresh & isfinite(img));
+ 		end;
+ 	end;
+ 
+--- spm_normalise_disp.m	2002-10-16 13:50:22.000000000 +0200
++++ spm_normalise_disp.m	2009-04-03 00:00:00.000000000 +0200
+@@ -43,7 +43,7 @@
+ d = [size(t.Tr) 1 1 1];
+ d = d(1:3);
+ 
+-if prod(d)>1 & finite(t.flags.reg),
++if prod(d)>1 & isfinite(t.flags.reg),
+ 	text(0,0.35, sprintf('%d nonlinear iterations',t.flags.nits),...
+ 		'Interpreter','none','Parent',ax);
+ 	text(0,0.30, sprintf('%d x %d x %d basis functions',d),...
+--- spm_normalise.m	2004-06-29 11:56:46.000000000 +0200
++++ spm_normalise.m	2009-04-03 00:00:00.000000000 +0200
+@@ -180,7 +180,7 @@
+ if any(fov<60),
+ 	fprintf('Field of view too small for nonlinear registration\n');
+ 	Tr = [];
+-elseif finite(flags.cutoff) & flags.nits & ~isinf(flags.reg),
++elseif isfinite(flags.cutoff) & flags.nits & ~isinf(flags.reg),
+         fprintf('3D CT Norm...\n');
+ 	Tr = snbasis(VG1,VF1,VWG,VWF,Affine,...
+ 		max(flags.smoref,flags.smosrc),flags.cutoff,flags.nits,flags.reg);
+--- spm_orthviews.m	2003-04-17 13:56:19.000000000 +0200
++++ spm_orthviews.m	2009-04-03 00:00:00.000000000 +0200
+@@ -804,11 +804,11 @@
+ 	mx = -Inf;
+ 	for i=1:vol.dim(3),
+ 		tmp = spm_slice_vol(vol,spm_matrix([0 0 i]),vol.dim(1:2),0);
+-		imx = max(tmp(find(finite(tmp))));
++		imx = max(tmp(find(isfinite(tmp))));
+ 		if ~isempty(imx),mx = max(mx,imx);end
+ 	end;
+ else,
+-	mx = max(vol(find(finite(vol))));
++	mx = max(vol(find(isfinite(vol))));
+ end;
+ %_______________________________________________________________________
+ function mn = minval(vol)
+@@ -816,11 +816,11 @@
+         mn = Inf;
+         for i=1:vol.dim(3),
+                 tmp = spm_slice_vol(vol,spm_matrix([0 0 i]),vol.dim(1:2),0);
+-		imn = min(tmp(find(finite(tmp))));
++		imn = min(tmp(find(isfinite(tmp))));
+ 		if ~isempty(imn),mn = min(mn,imn);end
+         end;
+ else,
+-        mn = min(vol(find(finite(vol))));
++        mn = min(vol(find(isfinite(vol))));
+ end;
+ 
+ %_______________________________________________________________________
+@@ -926,9 +926,9 @@
+ 
+ 				sc   = 64/(mx-mn);
+ 				off  = 65.51-mn*sc;
+-				msk  = find(finite(tmpt)); imgt(msk) = off+tmpt(msk)*sc;
+-				msk  = find(finite(tmpc)); imgc(msk) = off+tmpc(msk)*sc;
+-				msk  = find(finite(tmps)); imgs(msk) = off+tmps(msk)*sc;
++				msk  = find(isfinite(tmpt)); imgt(msk) = off+tmpt(msk)*sc;
++				msk  = find(isfinite(tmpc)); imgc(msk) = off+tmpc(msk)*sc;
++				msk  = find(isfinite(tmps)); imgs(msk) = off+tmps(msk)*sc;
+ 
+ 				cmap = get(st.fig,'Colormap');
+ 				if size(cmap,1)~=128
+@@ -1033,9 +1033,9 @@
+ 					tmpt = (spm_slice_vol(vol,inv(TM0*M),TD,[0 NaN])'+mn)/(mx-mn);
+ 					tmpc = (spm_slice_vol(vol,inv(CM0*M),CD,[0 NaN])'+mn)/(mx-mn);
+ 					tmps = (spm_slice_vol(vol,inv(SM0*M),SD,[0 NaN])'+mn)/(mx-mn);
+-					tmpt(~finite(tmpt)) = 0;
+-					tmpc(~finite(tmpc)) = 0;
+-					tmps(~finite(tmps)) = 0;
++					tmpt(~isfinite(tmpt)) = 0;
++					tmpc(~isfinite(tmpc)) = 0;
++					tmps(~isfinite(tmps)) = 0;
+ 
+ 					cimgt = cimgt + cat(3,tmpt*colour(j,1),tmpt*colour(j,2),tmpt*colour(j,3));
+ 					cimgc = cimgc + cat(3,tmpc*colour(j,1),tmpc*colour(j,2),tmpc*colour(j,3));
+@@ -1183,7 +1183,7 @@
+ img = round((inpimg-mn)*scf)+1;
+ img(find(img<1))   = 1; 
+ img(find(img>cml)) = cml;
+-img(~finite(img))  = miscol;
++img(~isfinite(img))  = miscol;
+ return;
+ %_______________________________________________________________________
+ %_______________________________________________________________________
+--- spm_platform.m	2002-08-14 12:07:02.000000000 +0200
++++ spm_platform.m	2009-04-03 00:00:00.000000000 +0200
+@@ -78,7 +78,7 @@
+ case 'bigend'                      %-Return endian for this architecture
+ %=======================================================================
+ varargout = {SPM_PLATFORM.bigend};
+-if ~finite(SPM_PLATFORM.bigend),
++if ~isfinite(SPM_PLATFORM.bigend),
+ 	if isnan(SPM_PLATFORM.bigend)
+ 		error(['I don''t know if "',computer,'" is big-endian.'])
+ 	else
+--- spm_realign_ui.m	2004-06-29 11:56:49.000000000 +0200
++++ spm_realign_ui.m	2009-04-03 00:00:00.000000000 +0200
+@@ -574,7 +574,7 @@
+ 
+ tmp2 = [0 1 2 3 4 5 6 7 Inf];
+ tmp = find(defs.write.interp == tmp2);
+-if ~finite(defs.write.interp), tmp = 9; end;
++if ~isfinite(defs.write.interp), tmp = 9; end;
+ if isempty(tmp), tmp = 2; end;
+ defs.write.interp = spm_input('Reslice interpolation method?','+1','m',...
+ 	['Nearest Neighbour|Trilinear|2nd Degree B-Spline|'...
+--- spm_render.m	2002-10-29 20:42:49.000000000 +0100
++++ spm_render.m	2009-04-03 00:00:00.000000000 +0200
+@@ -66,7 +66,7 @@
+ 	if num==1,
+ 		brt = spm_input('Style',1,'new|old',[1 NaN], 1);
+ 	end;
+-	if finite(brt),
++	if isfinite(brt),
+ 		brt = spm_input('Brighten blobs',1,'none|slightly|more|lots',[1 0.75 0.5 0.25], 1);
+ 	end;
+ end;
+@@ -145,7 +145,7 @@
+ 		dep = spm_slice_vol(rend{i}.dep,spm_matrix([0 0 1])*inv(M2),d2,1);
+ 		z1  = dep(round(xyz(1,:))+round(xyz(2,:)-1)*size(dep,1));
+ 
+-		if ~finite(brt), msk = find(xyz(3,:) < (z1+20) & xyz(3,:) > (z1-5));
++		if ~isfinite(brt), msk = find(xyz(3,:) < (z1+20) & xyz(3,:) > (z1-5));
+ 		else,      msk = find(xyz(3,:) < (z1+60) & xyz(3,:) > (z1-5)); end;
+ 
+ 		if ~isempty(msk),
+@@ -153,13 +153,13 @@
+ 			% generate an image of the integral of the blob values.
+ 			%-----------------------------------------------
+ 			xyz = xyz(:,msk);
+-			if ~finite(brt), t0  = t(msk);
++			if ~isfinite(brt), t0  = t(msk);
+ 			else,	dst = xyz(3,:) - z1(msk);
+ 				dst = max(dst,0);
+ 				t0  = t(msk).*exp((log(0.5)/10)*dst)';
+ 			end;
+ 			X0  = full(sparse(round(xyz(1,:)), round(xyz(2,:)), t0, d2(1), d2(2)));
+-			hld = 1; if ~finite(brt), hld = 0; end;
++			hld = 1; if ~isfinite(brt), hld = 0; end;
+ 			X   = spm_slice_vol(X0,spm_matrix([0 0 1])*M2,size(rend{i}.dep),hld);
+ 			msk = find(X<0);
+ 			X(msk) = 0;
+@@ -168,7 +168,7 @@
+ 		end;
+ 
+ 		% Brighten the blobs
+-		if finite(brt), X = X.^brt; end;
++		if isfinite(brt), X = X.^brt; end;
+ 
+ 		mx(j) = max([mx(j) max(max(X))]);
+ 		mn(j) = min([mn(j) min(min(X))]);
+@@ -193,7 +193,7 @@
+ image(0,'Parent',ax);
+ set(ax,'YTick',[],'XTick',[]);
+ 
+-if ~finite(brt),
++if ~isfinite(brt),
+ 	% Old style split colourmap display.
+ 	%---------------------------------------------------------------
+ 	load Split;
+--- spm_reslice.m	2003-03-11 14:55:06.000000000 +0100
++++ spm_reslice.m	2009-04-03 00:00:00.000000000 +0200
+@@ -149,7 +149,7 @@
+ %             subdirectory with the same filename but prefixed with an 'r'.
+ %             They are all aligned with the first.
+ 
+-if ~finite(flags.interp), % Use Fourier method
++if ~isfinite(flags.interp), % Use Fourier method
+ 	% Check for non-rigid transformations in the matrixes
+ 	for i=1:prod(size(P)),
+ 		pp = P(1).mat\P(i).mat;
+@@ -215,7 +215,7 @@
+ 			VO         = spm_create_vol(VO);
+ 		end;
+ 
+-		if ~finite(flags.interp),
++		if ~isfinite(flags.interp),
+ 			v = abs(kspace3d(spm_bsplinc(P(i),[0 0 0 ; 0 0 0]'),P(1).mat\P(i).mat));
+ 			for x3 = 1:P(1).dim(3),
+ 				if flags.mean,
+@@ -379,7 +379,7 @@
+ %_______________________________________________________________________
+ function vo = nan2zero(vi)
+ vo = vi;
+-vo(~finite(vo)) = 0;
++vo(~isfinite(vo)) = 0;
+ return;
+ %_______________________________________________________________________
+ 
+--- spm_segment.m	2004-06-29 11:56:50.000000000 +0200
++++ spm_segment.m	2009-04-03 00:00:00.000000000 +0200
+@@ -469,7 +469,7 @@
+ 	[Y1,Y2,Y3] = affine_transform(X1,X2,X3,VF(i).mat\VF(1).mat);
+ 	dat(:,:,i) = spm_sample_vol(VF(i),Y1,Y2,Y3,1);
+ end;
+-msk = all(dat,3) & all(finite(double(dat)),3);
++msk = all(dat,3) & all(isfinite(double(dat)),3);
+ return;
+ %=======================================================================
+  
+--- spm_smoothto8bit.m	2003-03-04 19:41:28.000000000 +0100
++++ spm_smoothto8bit.m	2009-04-03 00:00:00.000000000 +0200
+@@ -49,7 +49,7 @@
+ for i=1:V.dim(3)+r{3}.s,
+ 	if i<=V.dim(3),
+ 		img      = spm_slice_vol(V,spm_matrix([0 0 i]),V.dim(1:2),0);
+-		msk      = find(~finite(img));
++		msk      = find(~isfinite(img));
+ 		img(msk) = 0;
+ 		buff(:,:,rem(i-1,r{3}.s*2+1)+1) = ...
+ 			conv2(conv2(img,r{1}.k,'same'),r{2}.k','same');
+--- spm_uw_apply.m	2005-02-04 12:17:35.000000000 +0100
++++ spm_uw_apply.m	2009-04-03 00:00:00.000000000 +0200
+@@ -312,7 +312,7 @@
+ %_______________________________________________________________________
+ function vo = nan2zero(vi)
+ vo = vi;
+-vo(~finite(vo)) = 0;
++vo(~isfinite(vo)) = 0;
+ return;
+ %_______________________________________________________________________
+ 
+--- spm_vol_ana.m	2004-06-29 11:56:53.000000000 +0200
++++ spm_vol_ana.m	2009-04-03 00:00:00.000000000 +0200
+@@ -28,7 +28,7 @@
+ %                 assumed to be at the centre of the volume
+ %                 - (hdr.dime.dim(2:4)+1)/2.
+ % 	* Scalefactors and dc-offset are derived from hdr.dime.funused1
+-%         hdr.dime.funused2 respectively (if funused1~=0 & finite(funused1)).
++%         hdr.dime.funused2 respectively (if funused1~=0 & isfinite(funused1)).
+ % 	  If hdr.dime.funused1 is zero or non-finite then they are derived
+ %         from hdr.dime.cal_max, hdr.dime.cal_min, hdr.dime.glmax and
+ %         hdr.dime.glmin.
+@@ -109,9 +109,9 @@
+ 
+ % Scaling etc... and offset into file...
+ %-----------------------------------------------------------------------
+-if finite(hdr.dime.funused1) & hdr.dime.funused1,
++if isfinite(hdr.dime.funused1) & hdr.dime.funused1,
+ 	scal  = hdr.dime.funused1;
+-	if finite(hdr.dime.funused2),
++	if isfinite(hdr.dime.funused2),
+ 		dcoff = hdr.dime.funused2;
+ 	else,
+ 		dcoff = 0;
+--- spm_vol_ecat7.m	2004-06-29 11:56:53.000000000 +0200
++++ spm_vol_ecat7.m	2009-04-03 00:00:00.000000000 +0200
+@@ -19,7 +19,7 @@
+ 	required = '1010001';
+ elseif ischar(required),
+ else,
+-	if finite(required),
++	if isfinite(required),
+ 		required = sprintf('%.7x',16842752+required);
+ 	else,
+ 		required = 'all';
+--- spm_write_sn.m	2004-06-29 11:56:54.000000000 +0200
++++ spm_write_sn.m	2009-04-03 00:00:00.000000000 +0200
+@@ -88,8 +88,8 @@
+ 	end;
+ end;
+ 
+-if ~all(finite(flags.vox(:))), flags.vox = def_flags.vox; end;
+-if ~all(finite(flags.bb(:))),  flags.bb  = def_flags.bb;  end;
++if ~all(isfinite(flags.vox(:))), flags.vox = def_flags.vox; end;
++if ~all(isfinite(flags.bb(:))),  flags.bb  = def_flags.bb;  end;
+ 
+ [x,y,z,mat] = get_xyzmat(prm,flags.bb,flags.vox);
+ 
+--- spm_write_vol.m	2003-02-26 19:58:28.000000000 +0100
++++ spm_write_vol.m	2009-04-03 00:00:00.000000000 +0200
+@@ -34,7 +34,7 @@
+ if ~isempty(s),
+ 	for p=1:dim(3),
+ 		tmp    = double(Y(:,:,p));
+-		tmp    = tmp(finite(tmp));
++		tmp    = tmp(isfinite(tmp));
+ 		if ~isempty(tmp),
+ 			mxs(p) = max(tmp);
+ 			mns(p) = min(tmp);
+@@ -45,8 +45,8 @@
+ 		for p=1:dim(3),
+ 			mx = mxs(p);
+ 			mn = mns(p);
+-			if ~finite(mx), mx = 0; end;
+-			if ~finite(mn), mn = 0; end;
++			if ~isfinite(mx), mx = 0; end;
++			if ~isfinite(mn), mn = 0; end;
+ 			if mx~=mn,
+ 				V.pinfo(1,p) = (mx-mn)/(dmnmx(2)-dmnmx(1));
+ 				V.pinfo(2,p) = ...
+@@ -57,8 +57,8 @@
+ 			end;
+ 		end;
+ 	else,
+-		mx = max(mxs(finite(mxs)));
+-		mn = min(mns(finite(mns)));
++		mx = max(mxs(isfinite(mxs)));
++		mn = min(mns(isfinite(mns)));
+ 		if isempty(mx), mx = 0; end;
+ 		if isempty(mn), mn = 0; end;
+ 		if mx~=mn,
+--- toolbox/Deformations/spm_sn2def.m	2004-06-29 11:56:51.000000000 +0200
++++ toolbox/Deformations/spm_sn2def.m	2009-04-03 00:00:00.000000000 +0200
+@@ -233,8 +233,8 @@
+ if nargin>=2,
+ 	[bb0,vox0] = bbvox_from_V(sn.VG);
+ 
+-	if any(~finite(bb)),  bb  = bb0;  end;
+-	if any(~finite(vox)), vox = vox0; end;
++	if any(~isfinite(bb)),  bb  = bb0;  end;
++	if any(~isfinite(vox)), vox = vox0; end;
+ 
+ 	bb      = sort(bb);
+ 	vox     = abs(vox);
+@@ -412,15 +412,15 @@
+ %_______________________________________________________________________
+ 
+ [bb0,vox0] = bbvox_from_V(sn.VG);
+-if any(~finite(vox)), vox = vox0; end;
+-if any(~finite(bb)),  bb  = bb0;  end;
++if any(~isfinite(vox)), vox = vox0; end;
++if any(~isfinite(bb)),  bb  = bb0;  end;
+ bb  = sort(bb);
+ vox = abs(vox);
+ 
+ if nargin>=3,
+ 
+-	if any(~finite(vox)), vox = vox0; end;
+-	if any(~finite(bb)),  bb  = bb0;  end;
++	if any(~isfinite(vox)), vox = vox0; end;
++	if any(~isfinite(bb)),  bb  = bb0;  end;
+ 	bb  = sort(bb);
+ 	vox = abs(vox);
+ 

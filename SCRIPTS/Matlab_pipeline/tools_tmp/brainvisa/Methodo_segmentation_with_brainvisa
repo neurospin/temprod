@@ -1,0 +1,67 @@
+IMPORT AND SEGMENT T1 MRI WITH BRAINVISA IN NEUROSPIN
+(wrote by baptiste)
+
+Tip : similar but more general information are available on http://neuroimage.usc.edu/brainstorm/Tutorials/SegBrainVisa
+
+1) Open the Konsole and type "cd /neurospin/meg/meg_rep/anat".
+
+2) Type "brainvisa" to run this software.
+	check BrainVISA => Préférences.
+	click on the green icon "DataBase" : select /neurospin/meg/meg_rep/anat/brainvisa_segmentation.
+
+3) Click on "gestion des données" =>  "client de récupération des données".
+	You can access these data by clicking on the small cross on the left of "Siemens Tim Trio 3.0T(Neurospin).
+	All the acquisitions are sorted by date, subject and session.
+	Give the output folder and the format to convert and launch.
+
+4) Use these successive command lines to put your images into the proper orientation 	
+	VipFlip –i sequencename.ima –o sequencename_flip1.ima –m yz
+	VipFlip –i sequencename_flip1.ima –o sequencename_flip2.ima –m xy
+	VipFlip –i sequencename_flip2.ima –o sequencename_flip3.ima –m xx
+	The slices in 'sequencename_flip3.ima' are in the proper orientation: right is on the right. 
+
+5) In "Gestion des données", open the folder "IRM T1" => Double click on "importation d'une IRM T1".
+	Input: sequencename_flip3.ima .
+	Output: /neurospin/meg/meg_rep/anat/brainvisa_segmentation.
+	Data type: raw T1 MRI .
+	File format: GIS .
+	Protocol: segmentation .
+	Sujet: enter subject name (the NIP number).
+	Then click on "exécuter".
+
+6) In "IRM T1", Open the folder "Pipeline de Segmentation" => Double click on "Pipeline T1 2007".
+7) click on "Pipeline T1 2007" on the left window
+	Select all operations excepted "Graphe des plis corticaux" and "Sulci recognition" (you don't need it). 
+
+8) Then input processing parameters
+	Mri: open your original MRI file (no flip) by clicking on the red icon and selecting your subject.
+	Mri_corrected: should be selected by default.
+	Normalized : no (should be selected by default).
+	Anterior_Commissure : click on the button on the right of AC input, it willopen the software
+	Anatomist wich allows you to define AC. => left click on saggital and axial view (left window),
+	then drag and drop the subject MRI to these empty view on the right window : you can select your AC
+	by clicking again on the icon on the right of AC input.
+Tip : how to define these reference points is explained here : http://neuroimage.usc.edu/brainstorm/CoordinateSystems
+	Do the same thing for the other anatomical points : PC, IP and LHP
+	Be carefull!!! In Anatomist: if you chose the Preference "Radiologic view" the right (left) hemisphere is on the left (right).
+	The Preference "Neurologic view" displays the right hemisphere on the right.
+Tip : T1 MRI acquired in neurospin have a Vitamine A capsule on the right side as a marker to check left/right orientation issue
+	Then click on "exécuter"
+
+9) After these operations, you will have the following files in the folder : database_anat/YourProtocol/YourSubject/t1mri/default_acquisition/default_analysis/segmentation/mesh
+		SubjectName_head.mesh
+		SubjectName_Lhemi.mesh
+		SubjectName_Rhemi.mesh
+		SubjectName_Lwhite.mesh
+		SubjectName_Rwhite.mesh
+as well as the corresponding files with minf extension
+
+10) Then you can check the goodness of the results in "Afficheur" => "Anatomist voir hémisphère avec l'IRM"
+	Select your hemi-mesh
+	Then click on "exécuter", it will open anatomist
+	Click on "3D" in the left window and drag and drop the surface input ("objets") on the surface output ("fenetres")
+	you can rotate by pressing the middle button and move the mouse
+Tip : all the control of Anatomist are available by putting mouse selector on small icons in the left of visualization windows
+
+
+

@@ -1,0 +1,134 @@
+#!/bin/sh
+# Cette commande sert à créer automatiquement les liens symboliques de toutes les données acquises en MEG contenues dans un dossier. Il est supposé que les données MEG sont stockées dans un dossier du type "sujet/date/...raw.fif"
+# Ce dossier est créé à l'identique dans le nouveau dossier 
+
+# Les variables à modifier selon l'utilisateur:
+# Indiquez ici le chemin absolu jusqu'à votre dossier d'acquisition
+dossier_acquisition="/neurospin/acquisition/neuromag/data/dynacomp"
+# Indiquez ici le chemin absolu de votre dossier qui contiendra les liens
+dossier_accueil="/neurospin/meg/meg_tmp/Dynacomp/Results/data/raw" 
+
+chemin_initial=$PWD
+
+# L'utilisateur veut-il bien utiliser cette commande ?
+echo "Voulez-vous créer des liens symboliques de vos données MEG ?"
+
+select answer in "Oui" "Non"; do 
+  case $answer in
+    "Oui"|"Non") break;;
+
+    "*") continue;;
+  esac
+done
+
+# S'il répond oui...
+if test $answer = "Oui"; then
+
+# Il choisit d'abord le dossier où seront sélectionnés les données MEG raw.fif
+  echo "Choisissez le dossier contenant les données MEG"
+  echo "0) $dossier_acquisition/"
+  select chemin1 in $dossier_acquisition/*/; do
+    if [ -d "$chemin1" ]; then
+      NbsubDir=$(echo $chemin1/*/ | wc -w)
+      # Il veur éventuellement aller + profondemment dans le dossier
+      until [ $NbsubDir -eq 0 ]; do
+        if [ $NbsubDir -eq 1 ]; then
+          if [ ! -d $chemin1*/ ]; then
+            NbsubDir=0
+          fi
+        fi
+        if [ $NbsubDir -gt 0 ]; then
+          echo "Précisez quel sous-répertoire (entrez 0 pour rester dans le répertoire actuel)"
+          select chemin2 in $chemin1*/; do
+            if [ -d "$chemin2" ]; then
+              chemin1=$chemin2
+              NbsubDir=$(echo $chemin1*/ | wc -w)
+            else
+              NbsubDir=0
+            fi
+            break;
+          done
+        fi
+      done
+    else
+      chemin1="$dossier_acquisition/"
+    fi
+    break;
+  done
+  echo ""
+  echo "Dossier choisi: $chemin1"
+  echo ""
+  
+# Il choisit maintenant le dossier où il mettra les liens symboliques
+  echo "Choisissez maintenant le dossier où les liens seront installés"
+  echo "0) $dossier_accueil/"
+  select newchemin1 in $dossier_accueil/*/; do
+    if [ -d "$newchemin1" ]; then
+      NbsubDir=$(echo $newchemin1*/ | wc -w)
+      # Il veur éventuellement aller + profondemment dans le dossier
+      until test $NbsubDir -eq 0; do
+        if [ $NbsubDir -eq 1 ]; then
+          if [ ! -d $newchemin1*/ ]; then
+            NbsubDir=0
+          fi
+        fi
+        if [ $NbsubDir -gt 0 ]; then
+          echo "Précisez quel sous-répertoire (entrez 0 pour rester dans le répertoire actuel)"
+          select newchemin2 in $newchemin1*/; do
+            if [ -d "$newchemin2" ]; then
+              newchemin1=$newchemin2
+              NbsubDir=$(echo $newchemin1*/ | wc -w)
+            else
+              NbsubDir=0
+            fi
+            break;
+          done
+        fi
+      done
+    else
+      newchemin1="$dossier_accueil/"
+    fi
+    break;
+  done
+  echo ""
+  echo "Dossier d'accueil: $newchemin1"
+  echo ""
+  
+# On se déplace maintenant dans le dossier d'acquisition pour recopier les dossiers "sujet/date/" dans le dossier d'accueil
+  cd $chemin1/..
+  chemin2=$PWD/
+  cd ..
+  chemin3=$PWD/
+
+  Nb1=$(echo $chemin1 | wc -c)
+  Nb2=$(echo $chemin2 | wc -c)
+  Nb3=$(echo $chemin3 | wc -c)
+  
+  dateExp=$(echo "$chemin1" | tail -c$(expr $Nb1 - $Nb2 + 1))
+  sujetExp=$(echo "$chemin2" | tail -c$(expr $Nb2 - $Nb3 + 1))
+
+# Dernière demande d'autorisation...
+  echo "Créer les liens symboliques dans le dossier $newchemin1$sujetExp$dateExp ?"
+  select answer in "Oui" "Annuler"; do 
+    case $answer in
+      "Oui"|"Annuler") break;;
+
+      "*") continue;;
+    esac
+  done
+  if test $answer = "Oui"; then
+    mkdir -p $newchemin1$sujetExp$dateExp
+    
+    echo "Création des liens symboliques..."
+    for var in $chemin1*; do
+      ln -sf $var $newchemin1$sujetExp$dateExp
+    done
+    echo "OK"
+  
+  else
+    echo "Opération annulée"
+  fi
+  cd $chemin_initial
+else
+  echo "Opération annulée"
+fi

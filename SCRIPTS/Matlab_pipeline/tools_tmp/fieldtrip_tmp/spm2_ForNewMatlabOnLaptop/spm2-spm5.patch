@@ -1,0 +1,33 @@
+--- Makefile	2005-07-26 16:01:32.000000000 +0200
++++ Makefile	2009-03-20 00:00:00.000000000 +0100
+@@ -1,6 +1,6 @@
+ #!make -f
+ #
+-# @(#)Makefile	2.16 John Ashburner 03/05/12
++# @(#)Makefile	2.17 Dimitri Papadopoulos 08/03/14
+ # Note that changes have been made outside SCCS
+ # $Id$
+ #
+@@ -116,8 +116,8 @@
+ 	spm_add.$(SUF) spm_conv_vol.$(SUF) spm_render_vol.$(SUF)\
+ 	spm_global.$(SUF) spm_resels_vol.$(SUF)\
+ 	spm_atranspa.$(SUF) spm_list_files.$(SUF) spm_unlink.$(SUF)\
+-	spm_krutil.$(SUF) spm_project.$(SUF) spm_hist2.$(SUF) spm_max.$(SUF)\
+-	spm_clusters.$(SUF) spm_bsplinc.$(SUF) spm_bsplins.$(SUF)\
++	spm_krutil.$(SUF) spm_project.$(SUF) spm_hist2.$(SUF) spm_get_lm.$(SUF)\
++	spm_bwlabel.$(SUF) spm_bsplinc.$(SUF) spm_bsplins.$(SUF)\
+ 	spm_bias_mex.$(SUF) spm_dilate.$(SUF) $(ADDED_MEX)
+ 
+ ###############################################################################
+@@ -283,9 +283,9 @@
+ 
+ spm_unlink.$(SUF): spm_unlink.c spm_sys_deps.h
+ 
+-spm_max.$(SUF): spm_max.c spm_sys_deps.h
++spm_get_lm.$(SUF): spm_get_lm.c spm_sys_deps.h
+ 
+-spm_clusters.$(SUF): spm_clusters.c spm_sys_deps.h
++spm_bwlabel.$(SUF): spm_bwlabel.c spm_sys_deps.h
+ 
+ spm_hist2.$(SUF):      spm_hist2.c spm_sys_deps.h
+ 

@@ -1,0 +1,265 @@
+#!/bin/sh
+# Cette commande sert à appliquer Maxfilter (correction SSS) de manière automatique sur tous les runs dans le cas où les HPIs n'ont pas été mesurés en continu (mais seulement au début de chaque enregistrement).
+# La position de la tête sera réalignée suivant une position-référence choisie parmi tous les runs: c-à-d celui dont la position est la + proche de la position moyenne calculée sur tous les runs 
+# Sera demandé d'abord s'il existe des mauvais capteurs communs à tous les runs, puis pour chaque run s'il existe d'autre mauvais capteurs spécifiques au run
+# Les mauvais capteurs sont notés dans un fichier texte bad_channels.txt
+
+# Indiquer ici le chemin absolu du dossier du projet
+dossier_analyse="/neurospin/meg/meg_tmp/Dynacomp/Results/data/raw"
+# Nomenclature des fichiers raw (la fin du nom de ces fichiers)
+raw_name="raw.fif"
+# Nomenclature des fichiers averages
+average_name="av.fif"
+
+chemin_initial=$PWD
+
+# Définition des fonctions
+#1) Pour poser une question en oui ou non
+Oui_ou_Non () {
+  select answer in "Oui" "Non"; do 
+    case $answer in
+      "Oui"|"Non") break;;
+
+      "*") continue;;
+    esac
+  done
+}
+#2) Pour demander de donner un entier. On peut mettre en paramètre un entier précisant le nombre de caractères devant composer l'entier (par ex si 4 -> 0245, 2486 OK mais pas 12
+Entier_stp () {
+  while true; do
+    # On récupère éventuellement la valeur donnée en argument
+    if test $# == 1; then
+      NbCarac=$(expr $1 + 1)
+    else
+      NbCarac=0
+    fi
+    
+    read Number
+    # On vérifie que la réponse est bien un entier
+    if [ "$(echo $Number | grep "^[ [:digit:] ]*$")" ];then
+      # Eventuellement si un paramètre $1 a été spécifié
+      if test $NbCarac == 0; then
+        break
+      else
+        # On vérifie que l'entier se compose bien de $1 caractères
+        if test $(echo $Number | wc -c) == $NbCarac; then
+          break
+        else 
+          echo "il faut exactement $1 caractères. (on peut mettre des zéros avant pour compléter)"
+        fi
+      fi
+    else
+      echo "Veuillez rentrer un entier"
+    fi
+  done
+}
+
+# L'utilisateur veut-il bien utiliser cette commande ?
+echo "Voulez-vous appliquer MaxFilter sur vos données MEG ?"
+
+Oui_ou_Non
+
+# S'il répond oui...
+if test "$answer" = "Oui"; then
+# Il indique le sous-dossier où sont contenus les liens symboliques dans le dossier parent "dossier_analyse"
+  echo "Indiquez le dossier contenant les données à analyser"
+  echo "0) $dossier_analyse/"
+  select chemin1 in $dossier_analyse/*/; do
+    if [ -d "$chemin1" ]; then
+      NbsubDir=$(echo $chemin1*/ | wc -w)
+      # Il veur éventuellement aller + profondemment dans le dossier
+      until test $NbsubDir -eq 0; do
+        if [ $NbsubDir -eq 1 ]; then
+          if [ ! -d $chemin1*/ ]; then
+            NbsubDir=0
+          fi
+        fi
+        if [ $NbsubDir -gt 0 ]; then
+          echo "Précisez quel sous-répertoire (entrez 0 pour rester dans le répertoire actuel)"
+          select chemin2 in $chemin1*/; do
+            if [ -d "$chemin2" ]; then
+              chemin1=$chemin2
+              NbsubDir=$(echo $chemin1*/ | wc -w)
+            else
+              NbsubDir=0
+            fi
+            break;
+          done
+        fi
+      done
+    else
+      chemin1=$dossier_analyse
+    fi
+    break;
+  done
+  cd $chemin1
+  
+  # On continue ?
+  
+  # On vérifie qu'il n'y ait pas déjà des fichiers sss.fif
+  NbsssFif=$(echo * | grep -c 'sss.fif')
+  # On vérifie qu'il y a bien des fichiers à analyser
+  NbFif=$(echo * | grep -c $raw_name)
+  # On vérifie s'il y a des données moyennées
+  Nbaverage=$(echo * | grep -c $average_name)
+  
+  if [ $Nbaverage -ne 0 ]; then
+    echo ""
+    echo "Appliquer MaxFilter aux données moyennées suivantes (sans sss) ?"
+    echo *$average_name
+    
+    Oui_ou_Non
+    
+    # Si l'utilisateur veut appliquer Maxfilter aux données moyennées sans sss:
+    if test "$answer" = "Oui"; then
+      if [ $NbsssFif -eq 0 ]; then
+        for AveFile in *$average_name; do
+          echo "Fichier $AveFile..."
+          maxfilter -f $AveFile -nosss
+        done
+      else
+        echo ""
+        echo "Vous devez auparavant retirer les fichiers sss.fif du dossier"
+        echo ""
+      fi
+    fi
+  fi
+    
+  if [ $NbsssFif -eq 0 -a $NbFif -ne 0 ]; then
+    echo ""
+    echo "Appliquer MaxFilter aux données suivantes ?"
+    echo *$raw_name
+    
+    Oui_ou_Non
+     
+    # Si l'utilisateur ne change pas d'avis...
+    if test "$answer" = "Oui"; then
+      # Appel de la fonction python pour determiner la position reference
+      fif_ref=$(python -c "import correction_sss as cor; cor.find_refHead('$raw_name')")
+      echo ""
+      echo "Le fichier $fif_ref est utilisé pour la position-référence"
+    
+      # Bad channels à retirer pour tous les fichiers ?
+      echo "Y a t-il des capteurs qu'il ne faut pas utiliser pour l'ensemble des fichiers $raw_name ?"
+    
+      Oui_ou_Non
+    
+      # S'il y a des bad channels communes...
+      if test "$answer" = "Oui"; then
+        echo "Combien de capteurs voulez-vous rentrer ?"
+      
+        Entier_stp
+        NbComBad=$Number
+        
+        if test $NbComBad == 0; then
+          ComBad=""
+        else
+          ComBad="-bad"
+        fi
+      
+        # On rentre maintenant le n° des capteurs mauvais communs à tous les runs
+        echo "Rentrez les numéros des capteurs (4 CHIFFRES chaque fois!!!)"
+        for i in $(seq 1 $NbComBad);do
+          echo "mauvais capteur #$i:"
+        
+          Entier_stp 4
+          ComBad=$ComBad" "$Number
+        done
+      else
+        ComBad=""
+      fi
+      
+      # Y a t'il aussi des bad channels spécifiques à chaque run ?
+      declare -a AllBad # Creation d'un tableau
+      k=0
+      for fifFile in *$raw_name; do
+        let k++ # incrementation
+        echo ""
+          echo "fichier $fifFile... "
+          # Bad channels specifiques au fichier courant ?
+        echo "Y a t-il d'autres capteurs en particulier qu'il ne faut pas utiliser pour ce fichier ?"
+    
+        Oui_ou_Non
+    
+        # S'il y a des bad channels specifiques...
+        if test "$answer" = "Oui"; then
+          echo "Combien de capteurs supplémentaires voulez-vous rentrer ?"
+      
+          Entier_stp
+          NbSpefBad=$Number
+        
+          if test $NbSpefBad == 0; then
+            SpefBad=""
+          else
+            if test "$ComBad" == ""; then
+              SpefBad="-bad"
+            else
+              SpefBad=""
+            fi 
+          fi
+      
+          # On rentre maintenant le n° des capteurs mauvais spécifiques au run courant
+          echo "Rentrez les numéros des capteurs (4 CHIFFRES chaque fois!!!)"
+          for i in $(seq 1 $NbSpefBad);do
+            echo "mauvais capteur #$i:"
+        
+            Entier_stp 4
+            SpefBad=$SpefBad" "$Number
+          done
+        else
+          SpefBad=""
+        fi
+      
+        # On prend l'ensemble des mauvais canaux
+        AllBad[$k]=$ComBad$SpefBad
+      done
+      
+      # Derniere chance d'annuler...
+      echo ""
+      echo "recapitulation..."
+      echo ""
+      k=0
+      for fifFile in *$raw_name; do
+        let k++
+        echo $fifFile ${AllBad[$k]}
+      done
+      echo ""
+      echo "Continuer ?"
+      
+      Oui_ou_Non
+      
+      # Si oui,on enregistre les mauvais canaux dans un fichier txt 
+      if test "$answer" = "Oui"; then
+        echo ""
+        echo "Sauvegarde des mauvais capteurs dans le fichier bad_channels.txt..."
+        rm -f bad_channels.txt
+        k=0
+        for fifFile in *$raw_name; do
+          let k++
+          echo $fifFile ${AllBad[$k]} >> bad_channels.txt
+        done
+        
+        # Et on fabrique enfin les fichiers sss.fif
+        echo ""
+        echo "Fabrication des fichiers sss.fif..."
+        echo ""
+        k=0
+        for fifFile in *$raw_name; do
+          let k++ # incrementation
+          # On applique MaxFilter
+          maxfilter -f $fifFile -origin 0 0 40 -frame head ${AllBad[$k]} -autobad 10000 -badlimit 7 -trans $fif_ref
+          echo ""
+        done
+      else
+        echo "Opération annulée"
+      fi
+    else 
+      echo "Opération annulée"
+    fi
+  else 
+    echo "Vérifier que vous n'avez pas de fichiers sss.fif dans votre répertoire, et que vous avez bien par contre des fichiers $raw_name" 
+    echo "La procédure est annulée"
+  fi
+else
+  echo "Opération annulée"
+fi
